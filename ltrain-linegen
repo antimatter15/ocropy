@@ -67,7 +67,7 @@ parser.add_argument('-e','--degradations',default="med",
 parser.add_argument('-j','--jitter',default=0.5)
 parser.add_argument('-s','--sizes',default="40-80")
 parser.add_argument('-C','--cleanup',default='[_~#]')
-
+parser.add_argument('-d','--display',action="store_true")
 parser.add_argument('--load',default=None,
                     help="start training with a previously trained model")
 
@@ -346,6 +346,7 @@ def process1():
             # print font
             image = genline(text=line,fontfile=font,
                 size=size,sigma=sigma,threshold=threshold)
+            # image = numpy.ndarray([0])
         except:
             traceback.print_exc()
             continue
@@ -360,15 +361,15 @@ def process1():
         # imsave(fname+".bin.png",image)
         gt = ocrolib.normalize_text(line)
 
-        if len(gt.strip()) < 2:
+        if len(gt.strip()) < 5:
             continue
         
         # with codecs.open(fname+".gt.txt","w",'utf-8') as stream:
         #     stream.write(gt+"\n")
-        print "%5.2f %5.2f %3d\t%s"%(sigma,threshold,size,line)
+        print "sigma %5.2f thresh %5.2f size %3d\t text: %s"%(sigma,threshold,size,line)
         break
 
-    return (image, gt, font)
+    return (preprocess(image), gt, font)
 
 
 
@@ -420,7 +421,7 @@ for trial in range(args.start,args.ntrain):
         transcript = gt
 
         print "#",trial,font,line.shape
-        line = preprocess(line)
+        # line = preprocess(line)
         if line is None: continue
         cs = array(codec.encode(transcript),'i')
         outputs = array(network.forward(line))
@@ -441,6 +442,10 @@ for trial in range(args.start,args.ntrain):
 
         cerror = edist.levenshtein(cs, result) 
         cerror_log.append((cerror,len(cs)))
+        
+        xr = [e*1.0/max(1,n) for e,n in cerror_log[-1000:]]
+        sr = filters.gaussian_filter(xr,100,mode='mirror')
+        print "    Levenshtein: ", sr[-1]
 
         if trial%20==0 or len(pred[:len(transcript)+5]) - len(transcript) > 15:
             # clf()
@@ -455,13 +460,13 @@ for trial in range(args.start,args.ntrain):
             # imshow(outputs.T,cmap=cm.hot,interpolation='bilinear',aspect='auto')
             # tight_layout()
             # print "showing"
-
-            figure("training",figsize=(1400//75,800//75),dpi=75)
-            clf()
-            gcf().canvas.set_window_title(args.output)
-            plot_network_info(network,outputs,aligned,deltas,transcript,pred,gta)
-            ginput(1,0.01)
+            if args.display:
+                figure("training",figsize=(1400//75,800//75),dpi=75)
+                clf()
+                gcf().canvas.set_window_title(args.output)
+                plot_network_info(network,outputs,aligned,deltas,transcript,pred,gta)
+                ginput(1,0.01)
         # ginput(1,0.01)
     except e:
-        print e
+        print traceback.print_exc()
         continue
