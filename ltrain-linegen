@@ -340,29 +340,34 @@ def process1():
         threshold += (2*rand()-1)*sthreshold
         line = pyrandom.choice(lines)
         size = pyrandom.choice(sizes)
+        gt = ocrolib.normalize_text(line)
+
+        if len(gt.strip()) < 10:
+            continue
         # with open(pagedir+".info","w") as stream:
         #     stream.write("%s\n"%font)
         try:
-            # print font
+            # print line
             image = genline(text=line,fontfile=font,
                 size=size,sigma=sigma,threshold=threshold)
             # image = numpy.ndarray([0])
         except:
             traceback.print_exc()
             continue
-        if amin(image.shape)<10: continue
-        if amax(image)<0.5: continue
-        if args.distort>0:
+        if amin(image.shape)<10:
+            # print "too small"
+            continue
+        if amax(image)<0.5:
+            # print "too dim"
+            continue
+        if args.distort > 0:
             image = rdistort(image,args.distort,args.dsigma,cval=amax(image))
         # if args.display:
         #     gray()
         #     clf(); imshow(image); ginput(1,0.1)
         # fname = pagedir+"/01%04d"%lineno
         # imsave(fname+".bin.png",image)
-        gt = ocrolib.normalize_text(line)
 
-        if len(gt.strip()) < 5:
-            continue
         
         # with codecs.open(fname+".gt.txt","w",'utf-8') as stream:
         #     stream.write(gt+"\n")
@@ -373,43 +378,58 @@ def process1():
 
 
 
-def safe_process1(queue):
-    iterc = 0
-    while True:
-        iterc += 1
-        if iterc % 800 == 0:
-            load_fonts()
+# def safe_process1(queue):
+#     iterc = 0
+#     while True:
+#         if iterc % 800 == 0:
+#             load_fonts()
 
-        try:
-            queue.put(process1())
-        except:
-            traceback.print_exc()
-            continue
+#         iterc += 1
+        
+#         try:
+#             print "merp"
+#             queue.put(process1())
+#         except:
+#             traceback.print_exc()
+#             continue
 
-# load_fonts()
+
+def safe_process2(arg):
+    try:
+        # return process1(arg)
+        return process1()
+    except IOError as e:
+        if ocrolib.trace: traceback.print_exc()
+        print fname,":",e
+    except ocrolib.OcropusException as e:
+        if e.trace: traceback.print_exc()
+        print fname,":",e
+    except:
+        traceback.print_exc()
+        return None
 
 from multiprocessing import Pool
-
-pool = Pool(processes=2)
+load_fonts()
+pool = Pool(processes=4)
 from multiprocessing import Process, Queue
-
-q = Queue(maxsize=10)
-p = Process(target=safe_process1, args=(q,))
-p.start()
-
-# print q.get()    # prints "[42, None, 'hello']"
-# p.join()
 
 from ocrolib import edist
 
+import time
 
-for trial in range(args.start,args.ntrain):
+trial = 0
+for r in pool.imap_unordered(safe_process2, iter(int, 1)):
+    trial += 1
     network.last_trial = trial+1
     
     if trial>args.start and trial%args.savefreq==0:
         network.save(args.output % trial)
     
-    (image, gt, font) = q.get()
+    print "=" * 100
+    (image, gt, font) = r
+    # print "+" * 100
+    # time.sleep(1)
+    # continue
     try:
         # fname = inputs[trial%len(inputs)]
         # fname = inputs[randint(0,len(inputs))]
