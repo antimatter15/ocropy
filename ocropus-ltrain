@@ -1,5 +1,8 @@
 #!/usr/bin/python
 
+import sys
+sys.path.append('/Users/kevin/ocropy/clstm/build/lib.macosx-10.10-x86_64-2.7')
+
 import random as pyrandom
 import re
 from pylab import *
@@ -48,10 +51,20 @@ parser.add_argument("--start",type=int,default=0,
 parser.add_argument("--ntrain",type=int,default=1000000,
                     help="# lines to train before stopping")
 
-parser.add_argument("files",nargs="*")
+# parser.add_argument("files",nargs="*")
 args = parser.parse_args()
 
-inputs = ocrolib.glob_all(args.files)
+# inputs = ocrolib.glob_all(args.files)
+import os
+
+inputs = []
+for dirname, dirnames, filenames in os.walk('linegen'):
+    for filename in filenames:
+        if filename.endswith(".bin.png"):
+            inputs.append(os.path.join(dirname, filename))
+
+print "number of images", len(inputs)
+
 if len(inputs)==0:
     parser.print_help()
     sys.exit(0)
@@ -88,6 +101,34 @@ def preprocess(line):
         line = vstack([zeros((args.pad,w)),line,zeros((args.pad,w))])
     return line
 
+
+def plot_network_info(network,outputs,aligned,errors,transcript,pred,gta):
+    subplot(511)
+    imshow(line.T,cmap=cm.gray)
+    title(cleandisp(transcript))
+    subplot(512)
+    gca().set_xticks([])
+    imshow(outputs.T[1:],vmin=0,cmap=cm.hot)
+    title(cleandisp(pred[:len(transcript)]))
+    subplot(513)
+    imshow(aligned.T[1:],vmin=0,cmap=cm.hot)
+    title(cleandisp(gta[:len(transcript)]))
+    subplot(514)
+    plot(outputs[:,0],color='yellow',linewidth=3,alpha=0.5)
+    plot(outputs[:,1],color='green',linewidth=3,alpha=0.5)
+    plot(amax(outputs[:,2:],axis=1),color='blue',linewidth=3,alpha=0.5)
+    plot(aligned[:,0],color='orange',linestyle='dashed',alpha=0.7)
+    plot(aligned[:,1],color='green',linestyle='dashed',alpha=0.5)
+    plot(amax(aligned[:,2:],axis=1),color='blue',linestyle='dashed',alpha=0.5)
+    subplot(515)
+    gca().set_yscale('log')
+    r = 10000
+    # errs = network.errors(range=r,smooth=100)
+    # xs = arange(len(errs))+network.last_trial-len(errs)
+    # plot(xs,errs,color='black')
+    # plot(xs,network.errors(range=r),color='black',alpha=0.4)
+    # plot(xs,network.cerrors(range=r,smooth=100),color='red',linestyle='dashed')
+
 for trial in range(args.start,args.ntrain):
     if trial>args.start and trial%args.savefreq==0:
         network.save(args.output % trial)
@@ -113,18 +154,25 @@ for trial in range(args.start,args.ntrain):
         print "   TRU:",repr(transcript)
         print "   ALN:",repr(gta[:len(transcript)+5])
         print "   OUT:",repr(pred[:len(transcript)+5])
-        if trial%20==0:
+        if trial%70==0:
+            # clf()
+            # subplot(311)
+            # title(cleandisp(transcript))
+            # imshow(line.T,cmap=cm.gray,interpolation='bilinear')
+            # subplot(312)
+            # title(cleandisp(gta))
+            # imshow(aligned.T,cmap=cm.hot,interpolation='bilinear',aspect='auto')
+            # subplot(313)
+            # title(cleandisp(pred))
+            # imshow(outputs.T,cmap=cm.hot,interpolation='bilinear',aspect='auto')
+            # tight_layout()
+            # print "showing"
+
+            figure("training",figsize=(1400//75,800//75),dpi=75)
             clf()
-            subplot(311)
-            title(cleandisp(transcript))
-            imshow(line.T,cmap=cm.gray,interpolation='bilinear')
-            subplot(312)
-            title(cleandisp(gta))
-            imshow(aligned.T,cmap=cm.hot,interpolation='bilinear',aspect='auto')
-            subplot(313)
-            title(cleandisp(pred))
-            imshow(outputs.T,cmap=cm.hot,interpolation='bilinear',aspect='auto')
-            tight_layout()
-        ginput(1,0.01)
+            gcf().canvas.set_window_title(args.output)
+            plot_network_info(network,outputs,aligned,deltas,transcript,pred,gta)
+            ginput(1,0.01)
+        # ginput(1,0.01)
     except e:
         print e

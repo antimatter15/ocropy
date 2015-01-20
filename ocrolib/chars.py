@@ -33,7 +33,7 @@ european = default+turkish+greek
 # there seems to be left vs right leaning, and top-heavy vs bottom-heavy
 
 replacements = [
-    (u'[_~#]',u"~"), # OCR control characters
+    # (u'[_~#]',u"~"), # OCR control characters
     (u'"',u"''"), # typewriter double quote
     (u"`",u"'"), # grave accent
     (u'[“”]',u"''"), # fancy quotes

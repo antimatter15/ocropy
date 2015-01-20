@@ -94,7 +94,6 @@ def deprecated(f):
             return f(*args,**kw)
     return _wrap
 
-
 
 ################################################################
 # text normalization
@@ -517,7 +516,7 @@ def load_object(fname,zip=0,nofind=0,verbose=0):
             unpickler.find_global = unpickle_find_global
             return unpickler.load()
 
-
+
 
 ################################################################
 ### Simple record object.

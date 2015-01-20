@@ -5,7 +5,7 @@ import random as pyrandom
 import glob,sys,os,re,codecs,traceback
 from pylab import *
 from PIL import Image
-import ImageFont,ImageDraw
+from PIL import ImageFont, ImageDraw
 from scipy.ndimage import filters,measurements,interpolation
 from scipy.misc import imsave
 import ocrolib
@@ -19,9 +19,9 @@ parser.add_argument('-f','--fonts',default=None)
 parser.add_argument('-F','--fontlist',default=None)
 parser.add_argument('-t','--texts',default=None)
 parser.add_argument('-T','--textlist',default=None)
-parser.add_argument('-m','--maxlines',default=200,type=int,
+parser.add_argument('-m','--maxlines',default=400,type=int,
     help='max # lines for each directory')
-parser.add_argument('-e','--degradations',default="lo",
+parser.add_argument('-e','--degradations',default="med",
     help="lo, med, or hi; or give a file")
 parser.add_argument('-j','--jitter',default=0.5)
 parser.add_argument('-s','--sizes',default="40-70")
@@ -147,8 +147,8 @@ def bounding_box(a):
 
 base = args.base
 print "base",base
-os.system("rm -rf "+base)
-os.mkdir(base)
+# os.system("rm -rf "+base)
+# os.mkdir(base)
 
 def crop(image,pad=1):
     [[r,c]] = measurements.find_objects(array(image==0,'i'))
@@ -193,7 +193,7 @@ for pageno,font in enumerate(fonts):
     if args.numdir:
         pagedir = "%s/%04d"%(base,pageno+1)
     else:
-        fbase = re.sub(r'[.][^/]*$','',font)
+        fbase = "y" + re.sub(r'[.][^/]*$','',font)
         fbase = re.sub(r'[/]','_',fbase)
         pagedir = "%s/%s"%(base,fbase)
     os.mkdir(pagedir)

@@ -56,7 +56,7 @@ def compile_and_find(c_string,prefix=".pynative",opt="-g -O4",libs="-lm",
         source = os.path.join(prefix,base+".c")
         with open(source,"w") as stream:
             stream.write(c_string)
-        cmd = "gcc "+opt+" "+libs+" "+options+" "+source+" -o "+so
+        cmd = "gcc-4.9 "+opt+" "+libs+" "+options+" "+source+" -o "+so
         if verbose: print "#",cmd
         if os.system(cmd)!=0:
             if verbose: print "compilation failed"
